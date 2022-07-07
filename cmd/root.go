@@ -391,6 +391,12 @@ func runSignalWrapper(cmd *Command) error {
 
 	shutdownCh := make(chan error)
 
+	mux := http.NewServeMux()
+	server := &http.Server{
+		Addr:    fmt.Sprintf("localhost:%s", cmd.httpPort),
+		Handler: mux,
+	}
+
 	if cmd.prometheusNamespace != "" {
 		e, err := prometheus.NewExporter(prometheus.Options{
 			Namespace: cmd.prometheusNamespace,
@@ -398,10 +404,10 @@ func runSignalWrapper(cmd *Command) error {
 		if err != nil {
 			return err
 		}
-		mux := http.NewServeMux()
 		mux.Handle("/metrics", e)
-		addr := fmt.Sprintf("localhost:%s", cmd.httpPort)
-		server := &http.Server{Addr: addr, Handler: mux}
+	}
+
+	if cmd.prometheusNamespace != "" {
 		go func() {
 			select {
 			case <-ctx.Done():
